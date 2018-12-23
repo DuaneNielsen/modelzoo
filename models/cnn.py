@@ -1,4 +1,3 @@
-from models.storage import Storeable
 from models.base import BaseVAE
 import torch
 import torch.nn as nn
@@ -53,7 +52,7 @@ def default_maxunpool_indices(output_shape, kernel_size, batch_size, channels, d
     return (h_v + w_v).expand(batch_size, channels, -1, -1)
 
 
-class ConvVAE4Fixed(Storeable, BaseVAE):
+class ConvVAE4Fixed(BaseVAE):
     """Convolutional VAE."""
 
     def __init__(self, input_shape, z_size, variational=True, first_kernel=5, first_stride=2, second_kernel=5,
@@ -63,7 +62,6 @@ class ConvVAE4Fixed(Storeable, BaseVAE):
         encoder = self.Encoder(input_shape, z_size, first_kernel, first_stride, second_kernel, second_stride)
         decoder = self.Decoder(z_size, encoder.z_shape, first_kernel, first_stride, second_kernel, second_stride)
         BaseVAE.__init__(self, encoder, decoder, variational)
-        Storeable.__init__(self)
 
     class Encoder(nn.Module):
         """Encoder."""

@@ -1,10 +1,9 @@
 import torch
 import torch.nn.utils.rnn as rnn_utils
 import torch.nn as nn
-from models.storage import Storeable
 
 
-class MDNRNN(Storeable, nn.Module):
+class MDNRNN(nn.Module):
     """
     Recurrent mixture density network.
 
@@ -13,7 +12,6 @@ class MDNRNN(Storeable, nn.Module):
 
     def __init__(self, i_size, z_size, hidden_size, num_layers, n_gaussians):
         nn.Module.__init__(self)
-        Storeable.__init__(self)
         self.a_size = i_size
         self.z_size = z_size
         self.hidden_size = hidden_size

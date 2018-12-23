@@ -95,8 +95,6 @@ class BaseVAE(nn.Module):
         if len(encoded) > 2:
             indices = encoded[2]
 
-        self.metadata['z_size'] = mu[0].data.numel()
-
         z = self.reparameterize(mu, logvar)
 
         if indices is not None:
