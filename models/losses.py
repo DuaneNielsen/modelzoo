@@ -3,7 +3,6 @@ import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 from .util import RemovableHandle
 from collections import OrderedDict
-from statistics import mean
 
 
 class Lossable(_Loss):

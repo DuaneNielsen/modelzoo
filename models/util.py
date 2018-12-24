@@ -59,6 +59,21 @@ class Hookable:
         self.before_hooks = collections.OrderedDict()
         self.after_hooks = collections.OrderedDict()
 
+    def register_init_hook(self, func):
+        """ Adds a closure to be executed before minibatch step, use trainer.context['key'] to store context to be
+        transmitted to the after_hook, or over the lifetime of the batch
+
+        variables to persist over the run can be stored in run.metadata['key']
+
+        :param func: closure, arguments are 'trainer, payload, input_data, target_data, model, optimizer, lossfunc,
+        dataloader, selector, run'
+        :return: a handle to remove the hook
+        """
+
+        handle = RemovableHandle(self.init_hooks)
+        self.init_hooks[handle.id] = func
+        return handle
+
     def register_before_hook(self, func):
         """ Adds a closure to be executed before minibatch step, use trainer.context['key'] to store context to be
         transmitted to the after_hook, or over the lifetime of the batch
@@ -90,16 +105,14 @@ class Hookable:
 
     def execute_init(self, init_args):
 
-        for closure in self.before_hooks.values():
-            closure(init_args)
+        for closure in self.init_hooks.values():
+            closure(self, init_args)
 
     def execute_before(self, before_args):
 
         for closure in self.before_hooks.values():
-            closure(before_args)
-
-        # self.context['start'] = time.time()
+            closure(self, before_args)
 
     def execute_after(self, after_args):
         for closure in self.after_hooks.values():
-            closure(after_args)
+            closure(self, after_args)

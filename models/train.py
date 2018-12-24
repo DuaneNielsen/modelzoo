@@ -1,10 +1,10 @@
 from .config import config
 from .util import Hookable
-from tqdm import tqdm
 
 from collections import namedtuple
 from pathlib import Path
-from statistics import mean
+
+import torch
 
 BeforeArgs = namedtuple('BeforeArgs', 'self, payload, input_data, target_data, model, optimizer, lossfunc, dataloader, '
                                       'selector, run, epoch')
@@ -186,6 +186,7 @@ class Run:
         self.epochs = 0
         self.step = 0
         self.epoch = None
+        self.total_epochs = 0
 
         self.context = {}
 
@@ -236,6 +237,7 @@ class Run:
         return self.model, self.opt, self.loss, self.data_package, self.trainer, self.tester, self
 
     def for_epochs(self, num_epochs):
+        self.total_epochs = num_epochs
         return EpochIter(num_epochs, self)
 
     def __getstate__(self):
@@ -274,6 +276,9 @@ class Run:
         import pickle
         with open(file, 'rb') as f:
             return pickle.load(f)
+
+    def export_model_params(self, filename):
+        torch.save(self.model.state_dict(), filename)
 
     @staticmethod
     def resume(file, data_package, increment_run=False):
