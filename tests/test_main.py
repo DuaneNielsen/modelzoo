@@ -1,6 +1,6 @@
 from unittest import TestCase
-from models.mdnrnn import MDNRNN
-from models.registry import test_visuals_v1
+from zoo.mdnrnn import MDNRNN
+from zoo.registry import test_visuals_v1
 
 
 class Environments(TestCase):
