@@ -49,7 +49,7 @@ class Config(metaclass=Singleton):
         # environment variables
         self.BUILD_TAG = os.environ.get('BUILD_TAG', 'build_tag').replace('"', '')
         self.GIT_COMMIT = os.environ.get('GIT_COMMIT', 'git_commit').replace('"', '')
-        self.TORCH_DEVICE = os.environ.get('TORCH_DEVICE', 'cuda').replace('"', '')
+        self.TORCH_DEVICE = os.environ.get('TORCH_DEVICE', 'no_env_set').replace('"', '')
 
         if DATA_PATH is not None:
             self.DATA_PATH = DATA_PATH
@@ -71,7 +71,7 @@ class Config(metaclass=Singleton):
         self.globaldata = {}
 
     def rolling_run_number(self):
-        return "{0:0=3d}".format(self.config['run_id']%1000)
+        return "{0:0=3d}".format(self.config['run_id'] % 1000)
 
     def run_id_string(self, model):
         return 'runs/' + self.rolling_run_number() + '/' + slug(model)
@@ -98,11 +98,14 @@ class Config(metaclass=Singleton):
             return param
 
     def device(self):
-        #todo     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        return torch.device(str(self.TORCH_DEVICE))
+        if torch.device(str(self.TORCH_DEVICE)) is not 'no_env_set':
+            device = torch.device(str(self.TORCH_DEVICE))
+        else:
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        return device
 
     def __str__(self):
-        return 'DATA_PATH ' +  str(self.DATA_PATH) + \
+        return 'DATA_PATH ' + str(self.DATA_PATH) + \
                ' GIT_COMMIT ' + str(self.GIT_COMMIT) + \
                ' TORCH_DEVICE ' + str(self.TORCH_DEVICE)
 

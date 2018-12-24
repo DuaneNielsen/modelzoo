@@ -83,7 +83,6 @@ class SimpleInference(Hookable):
         model.epoch = epoch
 
         for payload in dataloader:
-
             input_data = selector.get_input(payload, device)
 
             before_args = BeforeArgs(self, payload, input_data, None, model, None, lossfunc, dataloader,
@@ -318,7 +317,7 @@ class SimpleRunFac:
                 run_fac.run_list.append(Run.load(last_epoch.absolute()))
         return run_fac
 
-    #todo this needs a re-write, should support re-use of RUNS not RunFacs
+    # todo this needs a re-write, should support re-use of RUNS not RunFacs
     @staticmethod
     def reuse(run_dir, data_package):
         """
@@ -328,6 +327,7 @@ class SimpleRunFac:
         :return:
         """
         return SimpleRunFac.resume(run_dir, data_package, True)
+
 
 ModelOpt = namedtuple('ModelOpt', 'model, opt')
 

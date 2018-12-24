@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 from .util import RemovableHandle
 from collections import OrderedDict
+from torch.distributions import Uniform, kl_divergence
 
 
 class Lossable(_Loss):
@@ -28,6 +29,7 @@ class BceKldLoss(Lossable):
     """
     :param transform applies a transform to the ground truth
     """
+
     def __init__(self, beta=1.0, transform=None):
         super().__init__()
         self.beta = beta
@@ -57,7 +59,6 @@ class MseKldLoss(Lossable):
 
     # Reconstruction + KL divergence losses summed over all elements and batch
     def forward(self, recon_x, mu, logvar, x):
-
         MSE = F.mse_loss(recon_x, x, reduction='elementwise_mean')
 
         # see Appendix B from VAE paper:
@@ -72,9 +73,6 @@ class MseKldLoss(Lossable):
 
         self.execute_hooks(kld_loss=KLD, mse_loss=MSE)
         return MSE + KLD
-
-
-from torch.distributions import Uniform, kl_divergence
 
 
 class MSEKLDUniformLoss(Lossable):
@@ -92,6 +90,7 @@ class MSEKLDUniformLoss(Lossable):
 
         return KLD + MSE
 
+
 class GECOMseKldLoss(Lossable):
     def __init__(self, beta=1.0, cappa=0.99):
         super().__init__()
@@ -107,7 +106,6 @@ class GECOMseKldLoss(Lossable):
             self.running_mse = MSE.data.mean().item()
         else:
             self.running_mse = self.running_mse * self.cappa + MSE.data.mean().item() * (1 - self.cappa)
-
 
         # see Appendix B from VAE paper:
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -146,9 +144,9 @@ class BceLoss(Lossable):
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
         # https://arxiv.org/abs/1312.6114
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-        #KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        # KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
-        return BCE #+ KLD
+        return BCE  # + KLD
 
 
 class MSELoss(Lossable):

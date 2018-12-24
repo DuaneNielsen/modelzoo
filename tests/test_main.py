@@ -1,5 +1,6 @@
 from unittest import TestCase
 from models.mdnrnn import MDNRNN
+from models.registry import test_visuals_v1
 
 
 class Environments(TestCase):
@@ -12,3 +13,6 @@ class Environments(TestCase):
                        num_layers=3,
                        n_gaussians=3)
         assert model is not None
+
+    def test_registry(self):
+        model = test_visuals_v1()
