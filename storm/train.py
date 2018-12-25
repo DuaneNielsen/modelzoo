@@ -156,7 +156,6 @@ class Run:
         return self.model
 
     def construct_loss(self):
-        print(repr(self.loss_fn_i.__class__), repr(Init))
         if callable(self.loss_fn_i):
             self.loss = self.loss_fn_i
         else:
