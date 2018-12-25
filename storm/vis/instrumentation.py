@@ -216,37 +216,55 @@ class GUIProgressMeter:
         self.train_losses = []
         self.description = description
         self.test_losses = []
+        self.best_test_loss = None
         self.train_current = 0
         self.test_current = 0
         self.window = None
-        layout = [[sg.Text(f'{self.description}')],
-                  [sg.ProgressBar(0, orientation='h', size=(20, 20), key='epoch_progressbar')],
-                  [sg.ProgressBar(0, orientation='h', size=(20, 20), key='train_progressbar')],
-                  [sg.ProgressBar(0, orientation='h', size=(20, 20), key='test_progressbar')],
-                  [sg.Cancel()]]
+        layout = [
+            [sg.Text('epochs'), sg.ProgressBar(0, orientation='h', size=(20, 20), key='epoch_progressbar')],
+            [sg.Text('training'), sg.ProgressBar(0, orientation='h', size=(20, 20), key='train_progressbar')],
+            [sg.Text('testing'), sg.ProgressBar(0, orientation='h', size=(20, 20), key='test_progressbar')],
+            [sg.Text('train_loss: 0.0000', size=(15, 1), key='train_loss_txt'), sg.Text('test_loss: 0.0000', size=(15, 1), key='test_loss_txt')],
+            [sg.Text('best test loss : 0.0000', size=(30, 1), key='best_test_loss')],
+            [sg.Cancel()]
+        ]
 
-        self.window = sg.Window('Custom Progress Meter').Layout(layout)
+        self.window = sg.Window(f'{self.description}').Layout(layout)
         self.epoch_pb = self.window.FindElement('epoch_progressbar')
         self.train_pb = self.window.FindElement('train_progressbar')
         self.test_pb = self.window.FindElement('test_progressbar')
+        self.test_loss_txt = self.window.FindElement('test_loss_txt')
+        self.train_loss_txt = self.window.FindElement('train_loss_txt')
+        self.best_test_loss_txt = self.window.FindElement('best_test_loss')
 
     def update_train(self, current_batch, batch_total, loss, **kwargs):
         self.train_losses.append(loss.item())
         event, values = self.window.Read(timeout=0)
         self.train_pb.UpdateBar(self.train_current + 1, batch_total)
+        self.train_loss_txt.Update(f'train_loss: {mean(self.train_losses):.4f}')
         self.train_current += 1
 
     def update_test(self, current_batch, batch_total, loss, **kwargs):
         self.test_losses.append(loss.item())
         event, values = self.window.Read(timeout=0)
         self.test_pb.UpdateBar(self.test_current + 1, batch_total)
+        self.test_loss_txt.Update(f'test_loss: {mean(self.test_losses):.4f}')
         self.test_current += 1
 
     def end_epoch(self, epoch, total_epochs, **kwargs):
+        test_loss = mean(self.test_losses)
+        if self.best_test_loss is None:
+            self.best_test_loss = test_loss
+        elif test_loss < self.best_test_loss:
+            self.best_test_loss = test_loss
+
         self.train_current = 0
         self.test_current = 0
+        self.train_losses = []
+        self.test_losses = []
         event, values = self.window.Read(timeout=0)
         self.train_pb.UpdateBar(0, 10)
         self.test_pb.UpdateBar(0, 10)
         self.epoch_pb.UpdateBar(epoch + 1, total_epochs)
+        self.best_test_loss_txt.Update(f'best test loss: {self.best_test_loss:.4f} at epoch {epoch}')
 
