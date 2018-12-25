@@ -1,19 +1,14 @@
-from zoo.registry import Init, Params, Loader
-from .config import config
-from .util import Hookable
+from storm.zoo.registry import Init, Params, Loader
+from storm.config import config
+from storm.vis.hooks import hooks
 
 from collections import namedtuple
 from pathlib import Path
 
 import torch
 
-BeforeArgs = namedtuple('BeforeArgs', 'self, payload, input_data, target_data, model, optimizer, lossfunc, dataloader, '
-                                      'selector, run, epoch')
-AfterArgs = namedtuple('AfterArgs', 'self, payload, input_data, target_data, model, optimizer, lossfunc, dataloader, '
-                                    'selector, run, epoch, output_data, loss')
 
-
-class SimpleTrainer(Hookable):
+class SimpleTrainer:
 
     def train(self, model, optimizer, lossfunc, dataloader, selector, run, epoch):
         device = config.device()
@@ -21,14 +16,10 @@ class SimpleTrainer(Hookable):
         model.train()
         model.epoch = epoch
 
-        for payload in dataloader:
+        for i, payload in enumerate(dataloader):
 
             input_data = selector.get_input(payload, device)
             target_data = selector.get_target(payload, device)
-
-            before_args = BeforeArgs(self, payload, input_data, target_data, model, optimizer, lossfunc, dataloader,
-                                     selector, run, epoch)
-            self.execute_before(before_args)
 
             optimizer.zero_grad()
             output_data = model(*input_data)
@@ -39,14 +30,12 @@ class SimpleTrainer(Hookable):
             loss.backward()
             optimizer.step()
 
-            after_args = AfterArgs(self, payload, input_data, target_data, model, optimizer, lossfunc, dataloader,
-                                   selector, run, epoch, output_data, loss)
-            self.execute_after(after_args)
+            hooks.execute_train_end(i, len(dataloader), loss)
 
             run.step += 1
 
 
-class SimpleTester(Hookable):
+class SimpleTester:
 
     def test(self, model, lossfunc, dataloader, selector, run, epoch):
         device = config.device()
@@ -54,14 +43,10 @@ class SimpleTester(Hookable):
         model.eval()
         model.epoch = epoch
 
-        for payload in dataloader:
+        for i, payload in enumerate(dataloader):
 
             input_data = selector.get_input(payload, device)
             target_data = selector.get_target(payload, device)
-
-            before_args = BeforeArgs(self, payload, input_data, target_data, model, None, lossfunc, dataloader,
-                                     selector, run, epoch)
-            self.execute_before(before_args)
 
             output_data = model(*input_data)
             if type(output_data) == tuple:
@@ -69,14 +54,12 @@ class SimpleTester(Hookable):
             else:
                 loss = lossfunc(output_data, *target_data)
 
-            after_args = AfterArgs(self, payload, input_data, target_data, model, None, lossfunc, dataloader,
-                                   selector, run, epoch, output_data, loss)
-            self.execute_after(after_args)
+            hooks.execute_test_end(i, len(dataloader), loss)
 
             run.step += 1
 
 
-class SimpleInference(Hookable):
+class SimpleInference:
     def infer(self, model, lossfunc, dataloader, selector, run, epoch):
         device = config.device()
         model.to(device)
@@ -86,20 +69,12 @@ class SimpleInference(Hookable):
         for payload in dataloader:
             input_data = selector.get_input(payload, device)
 
-            before_args = BeforeArgs(self, payload, input_data, None, model, None, lossfunc, dataloader,
-                                     selector, run, epoch)
-            self.execute_before(before_args)
-
             output_data = model(*input_data)
-
-            after_args = AfterArgs(self, payload, input_data, None, model, None, lossfunc, dataloader,
-                                   selector, run, epoch, output_data, None)
-            self.execute_after(after_args)
 
             run.step += 1
 
 
-class Epoch(Hookable):
+class Epoch:
     def __init__(self, index, run):
         super(Epoch, self).__init__()
         self.ix = index
@@ -181,11 +156,11 @@ class Run:
         return self.model
 
     def construct_loss(self):
-        if isinstance(self.loss_fn_i, Params):
-            self.loss = self.loss_fn_i.construct()
-        else:
+        print(repr(self.loss_fn_i.__class__), repr(Init))
+        if callable(self.loss_fn_i):
             self.loss = self.loss_fn_i
-        self.loss.run = self
+        else:
+            self.loss = self.loss_fn_i.construct()
         return self.loss
 
     def init_run_dir(self, model, increment_run=True, tensorboard=True):
