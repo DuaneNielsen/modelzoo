@@ -160,4 +160,4 @@ fabric.properties
 
 .idea
 tests/reports
-config.json
+**config.json

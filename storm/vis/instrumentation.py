@@ -6,6 +6,7 @@ import cv2
 import progressbar
 import PySimpleGUI as sg
 from tensorboardX import SummaryWriter
+from storm.vis.hooks import hooks
 
 def print_loss_term(key, value):
     print('%s %f' % (key, value.item()))
@@ -117,8 +118,7 @@ def to_numpyRGB(image, invert_color=False):
         if invert_color:
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     elif smallest == 1:
-        # greyscale
-        pass
+        image = np.squeeze(image)
     elif smallest == 0:
         # greyscale
         pass
@@ -236,6 +236,12 @@ class GUIProgressMeter:
         self.test_loss_txt = self.window.FindElement('test_loss_txt')
         self.train_loss_txt = self.window.FindElement('train_loss_txt')
         self.best_test_loss_txt = self.window.FindElement('best_test_loss')
+        self.register()
+
+    def register(self):
+        hooks.train_end.register(self.update_train)
+        hooks.test_end.register(self.update_test)
+        hooks.epoch_end.register(self.end_epoch)
 
     def update_train(self, current_batch, batch_total, loss, **kwargs):
         self.train_losses.append(loss.item())

@@ -2,14 +2,18 @@ from pkg_resources import resource_filename
 from pathlib import Path
 import torch
 import pickle
-from storm.config import config
+from storm.config import config, slug
+from storm.zoo.mdnrnn import MDNRNN as mdnrnn
 
 
 def test_visuals_v1():
-    filepath = Path(resource_filename(__name__, 'files/epoch0002.run'))
-    print(str(filepath))
+    filepath = Path(resource_filename(__name__, 'files/str-convvae4fixed_1_loss_00465.lod'))
+    return Loader.load(str(filepath))
 
-#    return Run.load_model(str(filepath))
+
+def MDNRNN(i_size, z_size, hidden_size, num_layers, n_gaussians):
+    return Loader(Params(mdnrnn, i_size=i_size, z_size=z_size, hidden_size=hidden_size,
+                         num_layers=num_layers, n_gaussians=n_gaussians)).construct()
 
 
 class Loader:
@@ -41,7 +45,7 @@ class Loader:
     def inject_modules(self, model):
         if model is not None:
             for model in model.modules():
-                model.constructor = self
+                model.loader = self
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -53,12 +57,16 @@ class Loader:
     def __setstate__(self, state):
         self.__dict__ = state
 
-    def save(self, filename=None):
-        if filename is None:
-            #file = Path(self.run_id + '/epoch' + '%04d' % self.epochs + '.run')
-            file = Path(config.run_id_string(self.model))
-        else:
+    def save(self, epoch=0.0, test_loss=0.0, filename=None, dirpath=None):
+        name = slug(f'{type(self.model).__name__}_{epoch}_loss_{test_loss:.4f}') + '.lod'
+        if filename is not None:
             file = Path(filename)
+        elif dirpath is not None:
+            file = Path(dirpath) / name
+        else:
+            file = Path(config.run_path()) / name
+
+        file.parent.mkdir(parents=True, exist_ok=True)
         with file.open('wb') as f:
             pickle.dump(self, f)
 

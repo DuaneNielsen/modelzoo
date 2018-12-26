@@ -76,6 +76,9 @@ class Config(metaclass=Singleton):
     def run_id_string(self, model):
         return 'runs/' + self.rolling_run_number() + '/' + slug(model)
 
+    def run_path(self):
+        return 'runs/' + self.rolling_run_number()
+
     def convert_to_url(self, run, host=None, port='6006'):
         if host is None:
             import socket

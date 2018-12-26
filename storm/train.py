@@ -4,6 +4,8 @@ from storm.vis.hooks import hooks
 
 from collections import namedtuple
 from pathlib import Path
+import pickle
+from statistics import mean
 
 import torch
 
@@ -42,6 +44,7 @@ class SimpleTester:
         model.to(device)
         model.eval()
         model.epoch = epoch
+        losses = []
 
         for i, payload in enumerate(dataloader):
 
@@ -54,10 +57,12 @@ class SimpleTester:
             else:
                 loss = lossfunc(output_data, *target_data)
 
+            losses.append(loss.item())
             hooks.execute_test_end(i, len(dataloader), loss)
 
             run.step += 1
 
+        return mean(losses)
 
 class SimpleInference:
     def infer(self, model, lossfunc, dataloader, selector, run, epoch):
@@ -186,9 +191,6 @@ class Run:
         state['model'] = None
         state['opt'] = None
         state['loss'] = None
-        #todo deleting too many stuffs, need to unhook the hooks instead
-        state['tb'] = None
-        state['epoch'] = None
         return state
 
     def __setstate__(self, state):
@@ -199,7 +201,7 @@ class Run:
             file = Path(self.run_id + '/epoch' + '%04d' % self.epochs + '.run')
         else:
             file = Path(filename)
-        import pickle
+        file.parent.mkdir(parents=True, exist_ok=True)
         with file.open('wb') as f:
             pickle.dump(self, f)
 
