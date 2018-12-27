@@ -139,7 +139,7 @@ class UniImageViewer:
         self.channels = channels
         self.invert_color = invert_color
 
-    def render(self, image):
+    def render(self, image, block=False):
 
         image = to_numpyRGB(image, self.invert_color)
 
@@ -147,7 +147,10 @@ class UniImageViewer:
 
         # Display the resulting frame
         cv2.imshow(self.title, image)
-        cv2.waitKey(1)
+        if block:
+            cv2.waitKey(0)
+        else:
+            cv2.waitKey(1)
 
     def view_input(self, model, input, output):
         image = input[0] if isinstance(input, tuple) else input
