@@ -123,8 +123,8 @@ def to_numpyRGB(image, invert_color=False):
         # greyscale
         pass
     elif smallest == 4:
-        # that funny format with 4 color dims
-        pass
+        # I guess its probably the 32-bit RGBA format
+        image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGR)
     else:
         raise Exception(f'dont know how to display color of dimension {smallest}')
     return image
@@ -247,14 +247,14 @@ class GUIProgressMeter:
         hooks.epoch_end.register(self.end_epoch)
 
     def update_train(self, current_batch, batch_total, loss, **kwargs):
-        self.train_losses.append(loss.item())
+        self.train_losses.append(loss)
         event, values = self.window.Read(timeout=0)
         self.train_pb.UpdateBar(self.train_current + 1, batch_total)
         self.train_loss_txt.Update(f'train_loss: {mean(self.train_losses):.4f}')
         self.train_current += 1
 
     def update_test(self, current_batch, batch_total, loss, **kwargs):
-        self.test_losses.append(loss.item())
+        self.test_losses.append(loss)
         event, values = self.window.Read(timeout=0)
         self.test_pb.UpdateBar(self.test_current + 1, batch_total)
         self.test_loss_txt.Update(f'test_loss: {mean(self.test_losses):.4f}')
